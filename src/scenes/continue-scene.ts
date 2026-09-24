@@ -57,7 +57,7 @@ export async function continueScene(engine: Engine, document: SceneDocument, nam
             for (const key of ['ambient', 'exposure', 'sunIntensity'] as const) if (project.lighting[key] !== undefined) project.lighting[key] = numberAt(project.lighting[key], time);
             if (project.lighting.fog) project.lighting.fog.density = numberAt(project.lighting.fog.density, time);
         }
-        if (project.production) { project.production.notes = []; delete project.production.promptText; }
+        if (project.production) { project.production.notes = []; delete project.production.promptText; delete project.production.textOnlyPrompt; }
         assertProject(project);
     } finally { engine.sample(previous); }
     const next = addDocumentScene(document, project, name, id), scene = next.scenes.find(s => s.id === id)!;

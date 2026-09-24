@@ -5,7 +5,7 @@ import { notesText, productionData, putNote, safeFilename } from '../src/product
 import { blobCrc32, createZip } from '../src/production/zip.ts';
 import { productionEntries } from '../src/production/bundle.ts';
 import { duplicateDocumentScene, projectForScene, readSceneDocument } from '../src/scenes/sequence-project.ts';
-import { scenePromptFile } from '../src/production/prompts.ts';
+import { scenePromptFile, selectedPromptMode } from '../src/production/prompts.ts';
 import { applyOperations } from '../src/automation/edits.ts';
 import { SceneSession } from '../src/scenes/sequence-session.ts';
 test('production metadata roundtrips without changing legacy projects; bad links and note times rejected', () => {
@@ -92,4 +92,35 @@ test('prompt TXT preserves authored contents; bundle exports separate scenes wit
     const manifest = JSON.parse(await entries.find(e => e.name === '素材对应关系.json')!.data.text());
     assert.equal(manifest.promptFiles[2].file, null); assert.equal(manifest.video, null);
     await createZip(entries);
+});
+
+test('prompt modes retain independent drafts across tool edits, undo and portable scene roundtrips', async () => {
+    const project = demoProject();
+    project.production = { fixedPrompt: '风格', sceneReferenceIds: [], notes: [], promptText: '参考 @视频1\n原成稿', textOnlyPrompt: 'cut1: 单人中景\nA：“别动。（切至 B 特写，A 声音连续）”', promptMode: 'text-only' };
+    const session = new SceneSession(duplicateDocumentScene(readSceneDocument(project), 'scene-main', '第二段', 'b'));
+    const txn = session.begin();
+    session.commit(txn, applyOperations(txn.project, [{ operation: 'notes', value: { ...txn.project.production!, textOnlyPrompt: '本段独立开场', promptMode: 'reference-video' } }]));
+    assert.equal(session.project().production?.promptText, project.production.promptText);
+    assert.equal(session.project('scene-main').production?.textOnlyPrompt, project.production.textOnlyPrompt);
+    session.undo(); assert.equal(selectedPromptMode(session.project().production), 'text-only');
+    assert.equal(session.project().production?.textOnlyPrompt, project.production.textOnlyPrompt);
+    session.redo(); assert.equal(selectedPromptMode(session.project().production), 'reference-video');
+    assert.deepEqual(new SceneSession(JSON.parse(JSON.stringify(session.exportDocument()))).exportDocument(), session.exportDocument());
+    const file = scenePromptFile(project)!;
+    assert.ok(file.name.endsWith('-纯文本提示词.txt')); assert.equal(await file.data.text(), project.production.textOnlyPrompt);
+    const blank = structuredClone(project); blank.production!.textOnlyPrompt = '';
+    assert.equal(scenePromptFile(blank), undefined, 'A blank text-only draft never falls back to the video draft');
+    const entries = await productionEntries(project);
+    const texts = entries.filter(e => e.name.startsWith('逐场提示词/'));
+    assert.equal(texts.length, 2);
+    assert.deepEqual(await Promise.all(texts.map(e => e.data.text())), [project.production.promptText, project.production.textOnlyPrompt]);
+    const manifest = JSON.parse(await entries.find(e => e.name === '素材对应关系.json')!.data.text());
+    assert.ok(manifest.promptFiles[0].file.endsWith('-视频提示词.txt'));
+    assert.ok(manifest.promptFiles[0].textOnlyFile.endsWith('-纯文本提示词.txt'));
+    assert.equal(manifest.promptFiles[0].selectedMode, 'text-only');
+    assert.doesNotMatch(await entries.find(e => e.name === '提示词素材.txt')!.data.text(), /参考《参考视频/);
+    for (const patch of [{ textOnlyPrompt: null }, { textOnlyPrompt: {} }, { textOnlyPrompt: 'x'.repeat(100001) }, { promptMode: 'unknown' }, { promptMode: null }]) {
+        assert.throws(() => applyOperations(project, [{ operation: 'notes', value: { ...project.production, ...patch } }]), /textOnlyPrompt|promptMode/);
+    }
+    assert.equal(project.production.textOnlyPrompt, await file.data.text());
 });

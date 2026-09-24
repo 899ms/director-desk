@@ -16,5 +16,8 @@
 #production-scene-list{flex:none;height:65px}
 #production-fixed-prompt{height:220px}
 .production-prompt-field{flex:1;min-height:0}
+.production-prompt-modes{display:flex;align-self:flex-start;border:1px solid #555;border-radius:6px;padding:3px;gap:3px}
+.production-prompt-modes button{height:32px;min-width:96px;border:0;border-radius:3px;background:transparent;color:#aaa}
+.production-prompt-modes button[aria-pressed="true"]{background:#e8e8e8;color:#141414}
 .production-modal .range-occlusion{flex-direction:row;align-items:center}.production-modal .range-occlusion input{width:auto;height:auto}
 .production-note-marker{position:absolute;top:6px;height:26px;border:1px solid #888;background:#434343;color:#eee;text-align:left;padding:0 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

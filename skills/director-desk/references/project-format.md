@@ -75,7 +75,7 @@ v3 外层为 `{format:"director-desk",version:3,name,activeSceneId,resources,med
 | entities / cuts / references | 对象数组、切镜数组、参考图数组；无参考图时 `[]` |
 | production（可选） | `{fixedPrompt,sceneReferenceIds,notes}`；每条备注 `{id,start,end,actorId,story,emotion,dialogue,action}`；未绑定演员用空 actorId |
 
-production 可附 `promptText` 字符串（最长 100000 字），保存该段完整视频提示词，旧工程可省略。它与 fixedPrompt（项目风格固定头）、notes（按时间保存的剧情素材）不同。按[配套提示词格式](prompt-writing.md)写作并另附逐场 TXT；编辑 notes 时保留未改的 promptText。新接拍段保留风格头，但不照搬前段成稿。
+production 可附 `promptMode: "reference-video" | "text-only"`（省略按参考视频模式）。`promptText` 存参考视频成稿，`textOnlyPrompt` 存纯文本成稿，均为可省略、最长 100000 字的独立字符串。切换模式不复制或覆盖成稿；编辑 notes 时保留两份未改文稿和模式。按[配套提示词规则](prompt-writing.md)写作并另附对应 TXT。新接拍段保留风格头与模式，清空两份前段成稿。
 
 `notes` 编辑操作的 `value` 是整个 production 对象（不是数组或 patch），其中各字段必须齐全；未填写的文字用 ""，没有图片用 sceneReferenceIds:[]。数组整体替换，保留不打算修改的旧备注与固定提示词。错误会指出具体 production 字段；无效输入不会静默清空已有备注。
 

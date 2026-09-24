@@ -106,3 +106,4 @@ file-locations.json
 !/scripts/builtin-skill-files.cjs
 
 !/scripts/verify-file-permissions-desktop.mjs
+!/scripts/verify-prompt-modes.mjs
